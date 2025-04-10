@@ -1,0 +1,85 @@
+---
+title: "Plotting ratio of green posting to low-carbon investment"
+output: pdf_document
+---
+
+## ToDo
+
+1. Setup
+2. Plot raw ratio
+3. Plot normalized ratio
+
+## 1. Setup
+
+```{r library, echo = F, message = F}
+library(tidyverse)
+library(here)
+library(latex2exp)
+```
+
+```{r read_ratios}
+ratios <- read_csv(here("data", "1_ratios.csv"))
+glimpse(ratios)
+```
+
+## 2. Plot raw ratio
+
+Let
+
+$R = p \div i$ (Equation 1)
+
+where $R$ is the raw ratio of green posting to low-carbon investment, $p$ is the 
+green posting rate, and $i$ is the low-carbon investment share.
+
+Further, let
+
+$p = \frac{g}{(g + b)}$ (Equation 2)
+
+where $g$ is the number of posts with any green label, and $b$ is the number of 
+posts with any brown label *but* without a green label.
+
+Further, let
+
+$i = \frac{e}{c}$ (Equation 3)
+
+where $e$ is the investment into low-carbon, and $c$ is capital expenditure 
+(CapEx).
+
+For now, omitting the year 2017 for which the total number of posts is very low
+and the number of green posts is zero.
+
+```{r raw}
+ratios %>%
+  filter(year != 2017) %>%
+  ggplot(aes(x = year, y = posts_to_capex)) +
+    geom_line() +
+    labs(x = "Year", y = expression(paste("Ratio ",
+                                          italic("R"))), 
+         title = "Raw green posts to low-carbon investment ratio", 
+         subtitle = "ExxonMobil, 2018–2024") +
+    theme(
+      plot.caption = element_text(hjust = 0)  # Left-align the caption
+    )
+```
+
+## 3. Plot normalized ratio
+
+Let 
+
+$N = \frac{p - i}{p + i}$ (Equation 1)
+
+where $N$ is the normalized ratio of green posting to low-carbon investment.
+
+```{r normalized}
+ratios %>%
+  filter(year != 2017) %>%
+  ggplot(aes(x = year, y = posts_to_capex_normalized)) +
+    geom_line() +
+    labs(x = "Year", y = expression(paste("Ratio ",
+                                          italic("N"))), 
+         title = "Normalized green posts to low-carbon investment ratio", 
+         subtitle = "ExxonMobil, 2018–2024") +
+    theme(
+      plot.caption = element_text(hjust = 0)  # Left-align the caption
+    )
+```

@@ -1,0 +1,71 @@
+---
+title: "Calculating ratios with python"
+output: pdf_document
+---
+
+## ToDo
+
+1. Load data
+2. Preprocess and merge
+
+## 1. Load data
+
+```{python imports, echo = F}
+import os
+import pandas as pd
+```
+
+```{python ratios}
+ratio_file = os.path.join("data", "investments_lowcarbon+GS+JB.xlsx")
+ratio = pd.read_excel(ratio_file)
+ratio = ratio[['company', 'year', 'capex_low-carbon_as_pct_calc']]
+ratio['low_carbon_ratio'] = ratio['capex_low-carbon_as_pct_calc'] / 100
+ratio = ratio.drop(columns=['capex_low-carbon_as_pct_calc'])
+ratio = ratio.dropna(subset=['low_carbon_ratio'])
+ratio.head()
+```
+
+```{python posts}
+posts_file = os.path.join("data", "1_labels_and_data.csv")
+posts = pd.read_csv(posts_file)
+posts['published_at'] = pd.to_datetime(posts['published_at'])
+posts['year'] = posts['published_at'].dt.year
+posts = posts[['channel_name', 'green', 'brown', 'misc', 'year']]
+posts.head()
+```
+
+```{python matching_matching}
+matching_file = os.path.join("data", "1_matching.csv")
+matching = pd.read_csv(matching_file)
+matching
+```
+
+## 2. Preprocess and merge
+
+```{python merge_matching}
+posts_merged = posts.merge(matching, left_on='channel_name', right_on='channel', how='left')
+posts_merged.head()
+```
+
+```{python green_ratio}
+def compute_green_ratio(group):
+    green_sum = group['green'].sum()
+    posts_count = ((group['green'] != 0) | (group['brown'] != 0)).sum()
+    return pd.Series({'green_ratio': green_sum / posts_count})
+aggregated_posts = posts_merged.groupby(
+    ['company', 'year']
+).apply(compute_green_ratio, include_groups = False)
+aggregated_posts
+```
+
+```{python merge}
+ratios = aggregated_posts.merge(ratio, on=['company', 'year'], how='left')
+ratios['posts_to_capex'] = ratios['green_ratio'] / ratios['low_carbon_ratio']
+ratios['posts_to_capex_normalized'] = (ratios['green_ratio'] - ratios['low_carbon_ratio']) / (ratios['green_ratio'] + ratios['low_carbon_ratio'])
+ratios
+```
+
+```{python write}
+output_file = os.path.join("data", "2_ratios.csv")
+ratios.to_csv(output_file, index=False)
+```

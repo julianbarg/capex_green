@@ -1,0 +1,60 @@
+---
+title: "Calculating ratios with R"
+output: pdf_document
+---
+
+## ToDo
+
+1. Load data
+2. Preprocess and merge
+
+## 1. Load data
+
+```{r library}
+library(tidyverse)
+library(here)
+```
+
+```{r read_capex}
+ratio <- readxl::read_excel(here("data", "investments_lowcarbon+GS+JB.xlsx")) %>%
+  select(company, year, `capex_low-carbon_as_pct_calc`) %>%
+  mutate(low_carbon_ratio = `capex_low-carbon_as_pct_calc` / 100) %>%
+  select(-`capex_low-carbon_as_pct_calc`) %>%
+  filter(!is.na(low_carbon_ratio))
+glimpse(ratio)
+```
+
+```{r read_posts}
+posts <- read_csv(here("data", "1_labels_and_data.csv")) %>%
+  mutate(year = year(published_at)) %>%
+  select(channel_name, green, brown, misc, year)
+glimpse(posts)
+```
+
+```{r read_matching}
+matching <- read_csv(here("data", "1_matching.csv"))
+glimpse(matching)
+```
+
+## 2. Preprocess and merge
+
+```{r proprocess}
+aggregated_posts <- posts %>%
+  left_join(matching, by = c("channel_name" = "channel")) %>%
+  group_by(company, year) %>%
+  summarize(green_ratio = sum(green) / sum(green | brown), .groups = "drop")
+glimpse(aggregated_posts)
+```
+
+```{r merge_calc}
+ratios <- aggregated_posts %>%
+  left_join(ratio, by = c("company", "year")) %>%
+  mutate(posts_to_capex = green_ratio / low_carbon_ratio, 
+         posts_to_capex_normalized = (green_ratio - low_carbon_ratio) / 
+           (green_ratio + low_carbon_ratio))
+glimpse(ratios)
+```
+
+```{r write}
+write_csv(ratios, here("data", "1_ratios.csv"))
+```
