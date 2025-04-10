@@ -66,7 +66,7 @@ ratios %>%
 
 Let 
 
-$N = \frac{p - i}{p + i}$ (Equation 1)
+$N = \frac{p - i}{p + i}$ (Equation 4)
 
 where $N$ is the normalized ratio of green posting to low-carbon investment.
 
